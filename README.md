@@ -22,8 +22,8 @@ Role Variables
 
 ### Default
 
-	homegw_pppoe_pppinfo_list: []
-	* format: { name: dsl-provider, userid: xxxx@example.org, password: xxxxxxxx, device: eth0 }
+	homegw_pppoe_pppinfo_list: {}
+	* format: dsl-provider: { userid: xxxx@example.org, password: xxxxxxxx, device: eth0 }
 
 	homegw_pppoe_papsecrets_permission:
 	  owner: root
@@ -57,8 +57,8 @@ Example Playbook
     - hosts: all
 	  vars:
 	    homegw_pppoe_pppinfo_list:
-		  - default: { userid: xxx@example.org, password: xxxxxx, device: ppp1 }
-		  - ipv6: { userid: yyy@example.org, password: xxxxxx, device: ppp2 }
+		  default: { userid: xxx@example.org, password: xxxxxx, device: ppp1 }
+		  ipv6: { userid: yyy@example.org, password: xxxxxx, device: ppp2 }
 		homegw_pppoe_ipv6_enable: True
 		homegw_pppoe_ipv6_eth_device: ppp2
 		homegw_pppoe_internal_eth_device: 'eth1'
