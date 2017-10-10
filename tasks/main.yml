@@ -1,0 +1,122 @@
+---
+- name: install server packages
+  apt: pkg={{ item }} update_cache=yes cache_valid_time=1200
+  with_items:
+    - pppoe
+    - iproute2
+    - wide-dhcpv6-client
+  register: result
+
+- name: remove server packages
+  apt: pkg={{ item }} state=absent
+  with_items:
+    - network-manager
+  register: result
+  
+- name: modify /etc/network/interfaces for ipv4
+  become: True
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} ANSIBLE IPv4 PPP CONFIG"
+    block: |
+      auto {{ homegw_pppoe_pppinfo_ipv4_name }}
+      iface {{ homegw_pppoe_pppinfo_ipv4_name }} inet ppp
+        pre-up /sbin/ifconfig {{ homegw_pppoe_pppinfo_list[homegw_pppoe_pppinfo_ipv4_name]['device'] }} up
+        unit 1
+        provider {{ homegw_pppoe_pppinfo_ipv4_name }}
+        post-down /sbin/ifconfig {{ homegw_pppoe_pppinfo_list[homegw_pppoe_pppinfo_ipv4_name]['device'] }} down
+  register: result
+
+- name: modify /etc/network/interfaces for ipv6
+  become: True
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} ANSIBLE IPv6 PPP CONFIG"
+    block: |
+      auto {{ homegw_pppoe_pppinfo_ipv6_name }}
+      iface {{ homegw_pppoe_pppinfo_ipv6_name }} inet ppp
+        unit 2
+        provider {{ homegw_pppoe_pppinfo_ipv6_name }}
+  when: homegw_pppoe_ipv6_enable
+  register: result
+  
+- name: modify /etc/sysctl.conf for dhcpv6
+  become: True
+  sysctl:
+    name: net.ipv6.conf.all.accept_ra
+    value: 0
+  ignore_errors: True
+  when: homegw_pppoe_ipv6_enable
+  register: result
+
+- name: modify /etc/sysctl.conf for dhcpv6
+  become: True
+  sysctl:
+    name: "net.ipv6.conf.{{ homegw_pppoe_ipv6_eth_device }}.accept_ra"
+    value: 1
+  ignore_errors: True
+  when: homegw_pppoe_ipv6_enable
+  register: result
+  
+- name: setup pppoe settings 
+  become: True
+  lineinfile:
+    path: /etc/ppp/pap-secrets
+    regexp: '^"{{ item.value.userid }}'
+    line: '"{{ item.value.userid }}" * "{{ item.value.password }}" *'
+    owner: "{{ homegw_pppoe_papsecrets_permission.owner }}"
+    group: "{{ homegw_pppoe_papsecrets_permission.group }}"
+    mode:  "{{ homegw_pppoe_papsecrets_permission.mode }}"
+  with_dict: "{{ homegw_pppoe_pppinfo_list }}"
+  register: result
+  
+- name: place pppoe peers file
+  become: True
+  template:
+    src: "pppoe.peers.{{ item.key }}.j2"
+    dest: "/etc/ppp/peers/{{ item.key }}"
+    owner: "{{ homegw_pppoe_peersfile_permission.owner }}"
+    group: "{{ homegw_pppoe_peersfile_permission.group }}"
+    mode:  "{{ homegw_pppoe_peersfile_permission.mode }}"
+  with_dict: "{{ homegw_pppoe_pppinfo_list }}"
+  register: result
+
+- name: place ipv6 pppoe script to add default gw
+  become: True
+  template:
+    src: pppoe.ipv6-up.script.j2
+    dest: "/etc/ppp/ipv6-up.d/v6route"
+    owner: root
+    group: dip
+    mode: 0755
+  when: homegw_pppoe_ipv6_enable
+  register: result
+
+- name: modify /etc/default/wide-dhcpv6-client
+  become: True
+  lineinfile:
+    path: /etc/default/wide-dhcpv6-client
+    regexp: "^INTERFACES"
+    line: 'INTERFACES="{{ homegw_pppoe_ipv6_eth_device }}"'
+  when: homegw_pppoe_ipv6_enable
+  register: result
+
+- name: modify /etc/wide-dhcpv6/dhcp6c.conf
+  become: True
+  blockinfile:
+    path: /etc/wide-dhcpv6/dhcp6c.conf
+    marker: "# {mark} ANSIBLE PPPoE SETTINGS"
+    block: |
+      interface {{ homegw_pppoe_ipv6_eth_device }} {
+        send ia-pd 0;
+        request domain-name-servers;
+        script "/etc/wide-dhcpv6/dhcp6c-script";
+      };
+      
+      id-assoc pd 0 {
+        prefix-interface {{ homegw_pppoe_internal_eth_device }} {
+          sla-id 0;
+          sla-len 0;
+        };
+      };
+  register: result

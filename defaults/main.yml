@@ -1,0 +1,27 @@
+---
+# defaults file for homegw-pppoe
+
+## format: dsl-provider: { userid: xxxx@example.org, password: xxxxxxxx, device: eth0 } 
+homegw_pppoe_pppinfo_list: []
+# one of the 'homegw_pppoe_pppinfo_list' keys
+homegw_pppoe_pppinfo_ipv4_name: 'default'
+homegw_pppoe_pppinfo_ipv6_name: 'ipv6'
+
+homegw_pppoe_papsecrets_permission:
+  owner: root
+  group: root
+  mode: '0400'
+  
+homegw_pppoe_peersfile_permission:
+  owner: root
+  group: dip
+  mode: '0640'
+
+## If True, the pppoe-ipv6-up script will be placed.
+homegw_pppoe_ipv6_enable: False
+
+## If homegw_pppoe_ipv6_enable is True, the ipv6 ppp device name must be placed.
+homegw_pppoe_ipv6_eth_device: 'ppp2'
+
+## If homegw_pppoe_ipv6_enable is True, the internal eth device name must be placed to allocate the site level ipv6 prefix.
+homegw_pppoe_internal_eth_device: 'eth1'

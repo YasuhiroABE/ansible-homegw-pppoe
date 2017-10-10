@@ -1,0 +1,16 @@
+user "{{ item.value.userid }}"
+pty "/usr/sbin/pppoe -I {{ item.value.device }} -T 80 -m 1414"
+noipdefault
+usepeerdns
+defaultroute
+hide-password
+lcp-echo-interval 20
+lcp-echo-failure 3
+connect /bin/true
+noauth
+persist
+mtu 1454
++ipv6
+noaccomp
+default-asyncmap
+plugin rp-pppoe.so {{ item.value.device }}
