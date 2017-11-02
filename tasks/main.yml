@@ -1,5 +1,6 @@
 ---
 - name: install server packages
+  become: True
   apt: pkg={{ item }} update_cache=yes cache_valid_time=1200
   with_items:
     - pppoe
@@ -8,6 +9,7 @@
   register: result
 
 - name: remove server packages
+  become: True
   apt: pkg={{ item }} state=absent
   with_items:
     - network-manager
