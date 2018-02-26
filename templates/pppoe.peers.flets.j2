@@ -7,7 +7,7 @@ lcp-echo-failure 3
 connect /bin/true
 noauth
 persist
-mtu 1454
+mtu {{ homegw_pppoe_mtu }}
 noaccomp
 default-asyncmap
 plugin rp-pppoe.so {{ item.value.device }}
